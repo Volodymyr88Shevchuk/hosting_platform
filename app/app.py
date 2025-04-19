@@ -51,11 +51,8 @@ async def upload_file(
     }
 
 @app.get("/sites/{username}/{filename}")
-async def get_file(request: Request, username: str, filename: str):
+async def get_file(username: str, filename: str):
     file_path = UPLOAD_DIR / username / filename
     if file_path.exists():
-        base_url = str(request.base_url).rstrip("/")
-        return {
-            "message": f"File available at: {base_url}/sites/{username}/{filename}"
-        }
+        return FileResponse(file_path, media_type="text/html")
     return {"error": "File not found"}
