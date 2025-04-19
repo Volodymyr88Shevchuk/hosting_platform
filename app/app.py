@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse
 from pathlib import Path
 
@@ -27,7 +27,11 @@ async def upload_form():
     """
 
 @app.post("/upload")
-async def upload_file(username: str = Form(...), file: UploadFile = File(...)):
+async def upload_file(
+    request: Request,
+    username: str = Form(...),
+    file: UploadFile = File(...)
+):
     user_dir = UPLOAD_DIR / username
     user_dir.mkdir(parents=True, exist_ok=True)
 
@@ -40,16 +44,18 @@ async def upload_file(username: str = Form(...), file: UploadFile = File(...)):
     except Exception as e:
         return {"error": f"Failed to save file: {str(e)}"}
 
+    base_url = str(request.base_url).rstrip("/")
     return {
         "message": "File uploaded successfully",
-        "access_url": f"http://192.168.1.100/sites/{username}/{file.filename}"
+        "access_url": f"{base_url}/sites/{username}/{file.filename}"
     }
 
 @app.get("/sites/{username}/{filename}")
-async def get_file(username: str, filename: str):
+async def get_file(request: Request, username: str, filename: str):
     file_path = UPLOAD_DIR / username / filename
     if file_path.exists():
+        base_url = str(request.base_url).rstrip("/")
         return {
-            "message": f"File available at: http://192.168.1.100/sites/{username}/{filename}"
+            "message": f"File available at: {base_url}/sites/{username}/{filename}"
         }
     return {"error": "File not found"}
