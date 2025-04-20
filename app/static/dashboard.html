@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Dashboard</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 80px auto; }
+    input, button { display: block; margin-top: 10px; width: 100%; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Welkom! Upload jouw HTML-project</h2>
+
+  <form id="uploadForm">
+    <input type="text" id="username" name="username" placeholder="Gebruikersnaam" required>
+    <input type="file" id="file" name="file" required>
+    <button type="submit">Upload</button>
+  </form>
+
+  <p id="msg" style="color: green;"></p>
+  <div id="projectLink" style="margin-top: 20px;"></div>
+
+  <script>
+  // Controleer of gebruiker ingelogd is
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Je bent niet ingelogd!");
+    window.location.href = "/";
+  }
+
+  document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("username", document.getElementById("username").value);
+    formData.append("file", document.getElementById("file").files[0]);
+
+    const response = await fetch("/upload", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const msg = document.getElementById("msg");
+    if (response.ok) {
+      const result = await response.json();
+      msg.textContent = "✅ Upload geslaagd!";
+      console.log("URL:", result.access_url);
+
+      // 🔽 Hier de knop tonen
+      const projectUrl = result.access_url;
+      document.getElementById("projectLink").innerHTML = `
+        <a href="${projectUrl}" target="_blank">
+          <button style="margin-top: 10px;">📂 Ga naar mijn project</button>
+        </a>
+      `;
+    } else {
+      msg.style.color = "red";
+      msg.textContent = "⛔ Upload mislukt!";
+    }
+  });
+  </script>
+</body>
+</html>

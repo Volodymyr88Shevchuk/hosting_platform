@@ -1,30 +1,34 @@
-from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi import FastAPI, UploadFile, File, Form, Request, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
+from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+import os
 
 app = FastAPI()
 
 UPLOAD_DIR = Path("/mnt/truenas/projects")
 
-@app.get("/", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <html>
-        <head><title>Upload</title></head>
-        <body>
-            <h2>Upload your HTML project</h2>
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <label for="username">Username:</label>
-                <input type="text" name="username" required /><br><br>
+# Zorg dat 'hosting_platform' wordt geserveerd als statische map
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 
-                <label for="file">Choose file:</label>
-                <input type="file" name="file" required /><br><br>
+# ⬇️ Mount je statische bestanden
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-                <button type="submit">Upload</button>
-            </form>
-        </body>
-    </html>
-    """
+# Route naar index.html bij bezoek aan root
+@app.get("/")
+async def root():
+    return FileResponse(STATIC_DIR / "index.html")
+
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    token = create_access_token(data={"sub": user["username"]})
+    return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/upload")
 async def upload_file(

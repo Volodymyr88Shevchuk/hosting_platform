@@ -1,13 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Upload Project</title>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 80px auto; }
+    input, button { display: block; margin-top: 10px; width: 100%; padding: 10px; }
+  </style>
 </head>
 <body>
-  <h2>Upload your HTML project</h2>
-  <form action="/upload?username=someuser" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" required>
-    <button type="submit">Upload</button>
+  <h2>Login</h2>
+  <form id="loginForm">
+    <input type="text" name="username" placeholder="Gebruikersnaam" required>
+    <input type="password" name="password" placeholder="Wachtwoord" required>
+    <button type="submit">Inloggen</button>
   </form>
+  <p id="msg" style="color:red;"></p>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  console.log("Login form submitted");
+  const form = new FormData(e.target);
+
+  try {
+    const response = await fetch("/login", {
+      method: "POST",
+      body: new URLSearchParams(form),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    });
+
+    console.log("Response status:", response.status);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Login successful:", data);
+      localStorage.setItem("token", data.access_token);
+      document.getElementById("msg").textContent = "✅ Login success!";
+      // You can uncomment this once dashboard.html exists:
+      window.location.href = "/static/dashboard.html";
+    } else {
+      const err = await response.text();
+      document.getElementById("msg").textContent = "Login mislukt!";
+      console.error("Login failed. Server said:", err);
+    }
+  } catch (err) {
+    document.getElementById("msg").textContent = "⚠️ Fout bij login verzoek.";
+    console.error("Fetch error:", err);
+  }
+});
+</script>
+
 </body>
 </html>
